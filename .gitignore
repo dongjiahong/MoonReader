@@ -1,0 +1,7 @@
+target
+logs
+data
+*.log
+app.toml
+.env
+*.db
