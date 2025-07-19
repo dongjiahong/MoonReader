@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use chrono::{DateTime, Utc, Duration};
-use serde::{Serialize, Deserialize};
 
 use crate::models::{KnowledgeBase, Document};
 
@@ -212,7 +211,7 @@ impl QueryOptimizer {
         
         let mut final_query = query.to_string();
         let search_pattern = format!("%{}%", search_term);
-        let mut params = vec![kb_id.to_string(), search_pattern];
+        let params = vec![kb_id.to_string(), search_pattern];
         
         if let Some(l) = limit {
             final_query.push_str(&format!(" LIMIT {}", l));

@@ -98,13 +98,29 @@ pub async fn save_ai_config(
         ));
     }
 
+    // Get existing config to preserve API key if not provided
+    let existing_config = state.db.get_ai_config().await.unwrap_or(None);
+    
     // Validate provider-specific requirements
-    match payload.provider {
-        AIProvider::DeepSeek => {
-            if payload.api_key.is_none() || payload.api_key.as_ref().unwrap().trim().is_empty() {
+    let api_key = match payload.provider {
+        AIProvider::DeepSeek | AIProvider::OpenAI => {
+            if let Some(ref key) = payload.api_key {
+                if !key.trim().is_empty() {
+                    Some(key.clone())
+                } else if let Some(ref existing) = existing_config {
+                    existing.api_key.clone()
+                } else {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({"error": "API key is required"})),
+                    ));
+                }
+            } else if let Some(ref existing) = existing_config {
+                existing.api_key.clone()
+            } else {
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "API key is required for DeepSeek provider"})),
+                    Json(json!({"error": "API key is required"})),
                 ));
             }
         }
@@ -115,20 +131,13 @@ pub async fn save_ai_config(
                     Json(json!({"error": "API URL is required for Local AI provider"})),
                 ));
             }
+            payload.api_key
         }
-        AIProvider::OpenAI => {
-            if payload.api_key.is_none() || payload.api_key.as_ref().unwrap().trim().is_empty() {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({"error": "API key is required for OpenAI provider"})),
-                ));
-            }
-        }
-    }
+    };
 
     let config = AIConfig::new(
         payload.provider,
-        payload.api_key,
+        api_key,
         payload.api_url,
         payload.model_name,
         payload.max_tokens.unwrap_or(1000),

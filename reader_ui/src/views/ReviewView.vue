@@ -320,10 +320,13 @@ export default {
     });
     const isAIConfigured = computed(() => {
       const config = aiConfig.value;
+      console.log("Review - AI Config:", config);
       if (config.provider === "local") {
         return !!config.api_url;
       }
-      return !!(config.api_key && config.provider);
+      const configured = !!(config.api_key_configured && config.provider);
+      console.log("Review - Is configured:", configured);
+      return configured;
     });
 
     // Methods

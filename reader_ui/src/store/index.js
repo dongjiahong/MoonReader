@@ -28,6 +28,7 @@ export default createStore({
     aiConfig: {
       provider: "deepseek",
       api_key: "",
+      api_key_configured: false,
       api_url: "",
       model_name: "",
       max_tokens: 1000,

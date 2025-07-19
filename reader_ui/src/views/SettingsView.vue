@@ -45,12 +45,23 @@
                       <el-input
                         v-model="configForm.api_key"
                         type="password"
-                        placeholder="请输入DeepSeek API密钥"
+                        :placeholder="
+                          configForm._hasExistingApiKey
+                            ? '留空保持现有密钥不变'
+                            : '请输入DeepSeek API密钥'
+                        "
                         show-password
                         clearable
                       />
                       <div class="form-help">
-                        <el-text type="info" size="small">
+                        <el-text
+                          v-if="configForm._hasExistingApiKey"
+                          type="success"
+                          size="small"
+                        >
+                          ✓ 已配置API密钥，留空可保持现有密钥不变
+                        </el-text>
+                        <el-text v-else type="info" size="small">
                           获取API密钥请访问
                           <el-link
                             href="https://platform.deepseek.com"
@@ -59,6 +70,20 @@
                           >
                             DeepSeek平台
                           </el-link>
+                        </el-text>
+                      </div>
+                    </el-form-item>
+
+                    <el-form-item label="API地址" prop="api_url">
+                      <el-input
+                        v-model="configForm.api_url"
+                        placeholder="https://api.deepseek.com/v1"
+                        clearable
+                      />
+                      <div class="form-help">
+                        <el-text type="info" size="small">
+                          默认为
+                          https://api.deepseek.com/v1，如有自定义需求可修改
                         </el-text>
                       </div>
                     </el-form-item>
@@ -86,12 +111,23 @@
                       <el-input
                         v-model="configForm.api_key"
                         type="password"
-                        placeholder="请输入OpenAI API密钥"
+                        :placeholder="
+                          configForm._hasExistingApiKey
+                            ? '留空保持现有密钥不变'
+                            : '请输入OpenAI API密钥'
+                        "
                         show-password
                         clearable
                       />
                       <div class="form-help">
-                        <el-text type="info" size="small">
+                        <el-text
+                          v-if="configForm._hasExistingApiKey"
+                          type="success"
+                          size="small"
+                        >
+                          ✓ 已配置API密钥，留空可保持现有密钥不变
+                        </el-text>
+                        <el-text v-else type="info" size="small">
                           获取API密钥请访问
                           <el-link
                             href="https://platform.openai.com"
@@ -323,8 +359,8 @@ export default {
     const configForm = reactive({
       provider: "deepseek",
       api_key: "",
-      api_url: "",
-      model_name: "",
+      api_url: "https://api.deepseek.com/v1",
+      model_name: "deepseek-chat",
       max_tokens: 1000,
       temperature: 0.7,
     });
@@ -367,8 +403,20 @@ export default {
     const isConfigValid = computed(() => {
       if (configForm.provider === "local") {
         return !!(configForm.api_url && configForm.model_name);
+      } else if (configForm.provider === "deepseek") {
+        return !!(
+          configForm.api_key &&
+          configForm.api_url &&
+          configForm.model_name
+        );
+      } else if (configForm.provider === "openai") {
+        return !!(
+          configForm.api_key &&
+          configForm.api_url &&
+          configForm.model_name
+        );
       }
-      return !!(configForm.api_key && configForm.model_name);
+      return false;
     });
 
     // Methods
@@ -381,6 +429,7 @@ export default {
 
       // Set default values based on provider
       if (provider === "deepseek") {
+        configForm.api_url = "https://api.deepseek.com/v1";
         configForm.model_name = "deepseek-chat";
       } else if (provider === "openai") {
         configForm.api_url = "https://api.openai.com/v1";
@@ -396,14 +445,18 @@ export default {
         const config = store.state.aiConfig;
 
         // Update form with loaded config
+        // Note: API key is not returned for security reasons
         Object.assign(configForm, {
           provider: config.provider || "deepseek",
-          api_key: config.api_key || "",
+          api_key: "", // Always start with empty API key for security
           api_url: config.api_url || "",
           model_name: config.model_name || "",
           max_tokens: config.max_tokens || 1000,
           temperature: config.temperature || 0.7,
         });
+
+        // Store whether API key was previously configured
+        configForm._hasExistingApiKey = config.api_key_configured || false;
 
         // Set default values if needed
         if (!configForm.model_name) {
@@ -423,14 +476,39 @@ export default {
           return;
         }
 
+        // Check if API key is required but empty
+        if (
+          (configForm.provider === "deepseek" ||
+            configForm.provider === "openai") &&
+          !configForm.api_key &&
+          !configForm._hasExistingApiKey
+        ) {
+          ElMessage.error("请输入 API 密钥");
+          return;
+        }
+
         testResult.value = null;
 
-        await store.dispatch("saveAIConfig", { ...configForm });
+        // Prepare config data
+        const configData = { ...configForm };
+
+        // If API key is empty but we have an existing key, don't send empty key
+        if (!configData.api_key && configData._hasExistingApiKey) {
+          delete configData.api_key;
+        }
+
+        // Remove internal flag
+        delete configData._hasExistingApiKey;
+
+        await store.dispatch("saveAIConfig", configData);
         ElNotification.success({
           title: "保存成功",
           message: "AI配置已保存",
           duration: 3000,
         });
+
+        // Reload config to get updated state
+        await loadConfig();
       } catch (error) {
         console.error("Save config error:", error);
         ElMessage.error("保存配置失败，请重试");
@@ -483,7 +561,7 @@ export default {
           Object.assign(configForm, {
             provider: "deepseek",
             api_key: "",
-            api_url: "",
+            api_url: "https://api.deepseek.com/v1",
             model_name: "deepseek-chat",
             max_tokens: 1000,
             temperature: 0.7,

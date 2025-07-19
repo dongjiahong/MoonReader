@@ -235,10 +235,13 @@ export default {
     });
     const isAIConfigured = computed(() => {
       const config = aiConfig.value;
+      console.log("AI Quiz - AI Config:", config);
       if (config.provider === "local") {
         return !!config.api_url;
       }
-      return !!(config.api_key && config.provider);
+      const configured = !!(config.api_key_configured && config.provider);
+      console.log("AI Quiz - Is configured:", configured);
+      return configured;
     });
 
     // Methods
