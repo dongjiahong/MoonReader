@@ -5,3 +5,4 @@ data
 app.toml
 .env
 *.db
+uploads

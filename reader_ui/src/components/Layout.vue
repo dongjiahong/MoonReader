@@ -8,7 +8,7 @@
           <!-- Mobile menu toggle -->
           <el-button
             class="mobile-menu-toggle mobile-only"
-            type="text"
+            link
             @click="toggleMobileMenu"
           >
             <el-icon size="20"><Menu /></el-icon>
@@ -48,7 +48,7 @@
         <div class="mobile-menu-content">
           <div class="mobile-menu-header">
             <h2>菜单</h2>
-            <el-button type="text" @click="showMobileMenu = false">
+            <el-button link @click="showMobileMenu = false">
               <el-icon><Close /></el-icon>
             </el-button>
           </div>
@@ -126,7 +126,7 @@
       <!-- Main Content Area -->
       <el-main class="app-main">
         <!-- Loading Overlay -->
-        <el-loading-directive v-if="loading" />
+        <div v-if="loading" v-loading="loading" class="loading-overlay"></div>
 
         <!-- Error Alert -->
         <el-alert
@@ -526,6 +526,15 @@ $tablet: 1024px;
     margin: 12px;
     font-size: 14px;
   }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
 }
 
 // Loading overlay enhancements

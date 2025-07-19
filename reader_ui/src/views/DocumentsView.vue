@@ -49,7 +49,7 @@
           </div>
           <el-progress
             :percentage="file.progress"
-            :status="file.status"
+            :status="getProgressStatus(file)"
             :stroke-width="6"
           />
         </div>
@@ -214,7 +214,11 @@ export default {
     },
 
     filteredDocuments() {
-      return this.getDocumentsByKnowledgeBase(this.knowledgeBaseId);
+      // Since fetchDocuments loads documents for a specific knowledge base,
+      // we can directly return all documents from the store
+      console.log("Documents in store:", this.documents);
+      console.log("Knowledge base ID:", this.knowledgeBaseId);
+      return this.documents || [];
     },
   },
   async created() {
@@ -231,8 +235,14 @@ export default {
         }
 
         // Load documents for this knowledge base
+        console.log(
+          "Loading documents for knowledge base:",
+          this.knowledgeBaseId
+        );
         await this.fetchDocuments(this.knowledgeBaseId);
+        console.log("Documents loaded:", this.filteredDocuments);
       } catch (error) {
+        console.error("Load data error:", error);
         ElMessage.error("加载数据失败");
       }
     },
@@ -260,7 +270,7 @@ export default {
         name: file.name,
         size: file.size,
         progress: 0,
-        status: "uploading",
+        status: "", // Empty string for normal progress
       });
 
       return true;
@@ -364,6 +374,17 @@ export default {
       if (!dateString) return "";
       const date = new Date(dateString);
       return date.toLocaleString("zh-CN");
+    },
+
+    getProgressStatus(file) {
+      // Return valid Element Plus Progress status values
+      if (file.status === "success") {
+        return "success";
+      } else if (file.status === "exception") {
+        return "exception";
+      } else {
+        return ""; // Default status for uploading
+      }
     },
   },
   watch: {

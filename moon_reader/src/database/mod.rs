@@ -189,6 +189,17 @@ impl DatabaseManager {
         Ok(result.rows_affected() > 0)
     }
     
+    pub async fn get_document_count_by_knowledge_base(&self, knowledge_base_id: &str) -> Result<i64, sqlx::Error> {
+        let row = sqlx::query(
+            "SELECT COUNT(*) as count FROM documents WHERE knowledge_base_id = ?"
+        )
+        .bind(knowledge_base_id)
+        .fetch_one(&self.pool)
+        .await?;
+        
+        Ok(row.get("count"))
+    }
+    
     // Question and Answer CRUD operations
     pub async fn save_question(&self, question: &Question) -> Result<(), sqlx::Error> {
         sqlx::query(

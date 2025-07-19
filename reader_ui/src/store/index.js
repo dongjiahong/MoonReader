@@ -65,6 +65,9 @@ export default createStore({
     },
 
     getDocumentsByKnowledgeBase: (state) => (knowledgeBaseId) => {
+      if (!Array.isArray(state.documents)) {
+        return [];
+      }
       return state.documents.filter(
         (doc) => doc.knowledge_base_id === knowledgeBaseId
       );
@@ -161,10 +164,15 @@ export default createStore({
 
     // Knowledge bases
     SET_KNOWLEDGE_BASES(state, knowledgeBases) {
-      state.knowledgeBases = knowledgeBases;
+      state.knowledgeBases = Array.isArray(knowledgeBases)
+        ? knowledgeBases
+        : [];
     },
 
     ADD_KNOWLEDGE_BASE(state, knowledgeBase) {
+      if (!Array.isArray(state.knowledgeBases)) {
+        state.knowledgeBases = [];
+      }
       state.knowledgeBases.push(knowledgeBase);
     },
 
@@ -187,14 +195,21 @@ export default createStore({
 
     // Documents
     SET_DOCUMENTS(state, documents) {
-      state.documents = documents;
+      state.documents = Array.isArray(documents) ? documents : [];
     },
 
     ADD_DOCUMENT(state, document) {
+      if (!Array.isArray(state.documents)) {
+        state.documents = [];
+      }
       state.documents.push(document);
     },
 
     DELETE_DOCUMENT(state, id) {
+      if (!Array.isArray(state.documents)) {
+        state.documents = [];
+        return;
+      }
       state.documents = state.documents.filter((doc) => doc.id !== id);
     },
 
@@ -213,7 +228,7 @@ export default createStore({
     },
 
     SET_REVIEW_HISTORY(state, history) {
-      state.reviewHistory = history;
+      state.reviewHistory = Array.isArray(history) ? history : [];
     },
 
     // AI Configuration
@@ -229,7 +244,9 @@ export default createStore({
       commit("CLEAR_MODULE_ERROR", "knowledgeBases");
       try {
         const response = await axios.get("/knowledge-bases");
-        commit("SET_KNOWLEDGE_BASES", response.data);
+        // Extract the knowledge_bases array from the response
+        const knowledgeBases = response.data.knowledge_bases || [];
+        commit("SET_KNOWLEDGE_BASES", knowledgeBases);
         commit("SET_SUCCESS_MESSAGE", "知识库列表加载成功");
       } catch (error) {
         const errorMessage =
@@ -328,12 +345,25 @@ export default createStore({
     async fetchDocuments({ commit }, knowledgeBaseId) {
       commit("SET_MODULE_LOADING", { module: "documents", loading: true });
       commit("CLEAR_MODULE_ERROR", "documents");
+
+      // Clear existing documents first
+      commit("SET_DOCUMENTS", []);
+
       try {
-        const response = await axios.get(
-          `/knowledge-bases/${knowledgeBaseId}/documents`
-        );
-        commit("SET_DOCUMENTS", response.data);
+        console.log("Fetching documents for knowledge base:", knowledgeBaseId);
+        const url = `/knowledge-bases/${knowledgeBaseId}/documents`;
+        console.log("Request URL:", axios.defaults.baseURL + url);
+
+        const response = await axios.get(url);
+        console.log("Documents response:", response.data);
+
+        // Extract the documents array from the response
+        const documents = response.data.documents || [];
+        console.log("Extracted documents:", documents);
+
+        commit("SET_DOCUMENTS", documents);
       } catch (error) {
+        console.error("Fetch documents error:", error);
         const errorMessage = error.response?.data?.error || "获取文档列表失败";
         commit("SET_MODULE_ERROR", {
           module: "documents",
@@ -520,8 +550,15 @@ export default createStore({
         const response = await axios.get(
           `/knowledge-bases/${knowledgeBaseId}/history`
         );
-        commit("SET_REVIEW_HISTORY", response.data);
-        return response.data;
+        // Handle different possible response formats
+        let history = response.data;
+        if (history && typeof history === "object" && history.sessions) {
+          history = history.sessions;
+        } else if (history && typeof history === "object" && history.history) {
+          history = history.history;
+        }
+        commit("SET_REVIEW_HISTORY", history);
+        return history;
       } catch (error) {
         const errorMessage = error.response?.data?.error || "获取复习历史失败";
         commit("SET_MODULE_ERROR", { module: "review", error: errorMessage });

@@ -42,7 +42,7 @@
       >
         <template #default>
           <p>请先配置AI服务才能使用问答功能</p>
-          <el-button type="text" @click="goToSettings"> 前往设置 </el-button>
+          <el-button link @click="goToSettings"> 前往设置 </el-button>
         </template>
       </el-alert>
     </el-card>
@@ -181,9 +181,7 @@
     </el-card>
 
     <!-- Loading Overlay -->
-    <div v-if="loading" class="loading-overlay">
-      <el-loading-directive />
-    </div>
+    <div v-if="loading" v-loading="loading" class="loading-overlay"></div>
   </div>
 </template>
 
@@ -228,12 +226,13 @@ export default {
     const currentKnowledgeBase = computed(
       () => store.state.currentKnowledgeBase
     );
-    const documents = computed(() =>
-      store.getters.getDocumentsByKnowledgeBase(route.params.id)
-    );
+    const documents = computed(() => store.state.documents || []);
     const aiConfig = computed(() => store.state.aiConfig);
 
-    const hasDocuments = computed(() => documents.value.length > 0);
+    const hasDocuments = computed(() => {
+      console.log("AI Quiz - Documents:", documents.value);
+      return documents.value.length > 0;
+    });
     const isAIConfigured = computed(() => {
       const config = aiConfig.value;
       if (config.provider === "local") {

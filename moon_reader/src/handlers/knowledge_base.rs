@@ -63,8 +63,19 @@ pub async fn list_knowledge_bases(
     State(state): State<AppState>
 ) -> AppResult<Json<ListKnowledgeBasesResponse>> {
     let knowledge_bases = state.db.get_knowledge_bases().await?;
+    
+    let mut kb_responses = Vec::new();
+    for kb in knowledge_bases {
+        let document_count = state.db.get_document_count_by_knowledge_base(&kb.id).await
+            .unwrap_or(0);
+        
+        let mut kb_response = KnowledgeBaseResponse::from(kb);
+        kb_response.document_count = document_count;
+        kb_responses.push(kb_response);
+    }
+    
     let response = ListKnowledgeBasesResponse {
-        knowledge_bases: knowledge_bases.into_iter().map(KnowledgeBaseResponse::from).collect(),
+        knowledge_bases: kb_responses,
     };
     
     Ok(Json(response))

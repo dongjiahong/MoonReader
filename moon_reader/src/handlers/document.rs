@@ -25,6 +25,7 @@ pub async fn list_documents(
     let documents_json: Vec<Value> = documents.into_iter().map(|doc| {
         json!({
             "id": doc.id,
+            "knowledge_base_id": doc.knowledge_base_id,
             "filename": doc.filename,
             "file_type": doc.file_type.to_string(),
             "file_size": doc.file_size,

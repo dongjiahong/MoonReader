@@ -12,7 +12,7 @@
               :disabled="!hasDocuments"
               @click="startReviewSession"
             >
-              <el-icon><Play /></el-icon>
+              <el-icon><VideoPlay /></el-icon>
               开始复习
             </el-button>
           </div>
@@ -42,7 +42,7 @@
       >
         <template #default>
           <p>请先配置AI服务才能使用复习功能</p>
-          <el-button type="text" @click="goToSettings"> 前往设置 </el-button>
+          <el-button link @click="goToSettings"> 前往设置 </el-button>
         </template>
       </el-alert>
 
@@ -260,7 +260,6 @@ import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import {
-  Play,
   Document,
   QuestionFilled,
   Check,
@@ -270,12 +269,12 @@ import {
   Medal,
   Refresh,
   Clock,
+  VideoPlay,
 } from "@element-plus/icons-vue";
 
 export default {
   name: "ReviewView",
   components: {
-    Play,
     Document,
     QuestionFilled,
     Check,
@@ -285,6 +284,7 @@ export default {
     Medal,
     Refresh,
     Clock,
+    VideoPlay,
   },
   setup() {
     const store = useStore();
@@ -311,12 +311,13 @@ export default {
     const currentKnowledgeBase = computed(
       () => store.state.currentKnowledgeBase
     );
-    const documents = computed(() =>
-      store.getters.getDocumentsByKnowledgeBase(route.params.id)
-    );
+    const documents = computed(() => store.state.documents || []);
     const aiConfig = computed(() => store.state.aiConfig);
 
-    const hasDocuments = computed(() => documents.value.length > 0);
+    const hasDocuments = computed(() => {
+      console.log("Review - Documents:", documents.value);
+      return documents.value.length > 0;
+    });
     const isAIConfigured = computed(() => {
       const config = aiConfig.value;
       if (config.provider === "local") {

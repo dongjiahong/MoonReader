@@ -41,7 +41,7 @@
               <div class="kb-header">
                 <h3 class="kb-title">{{ kb.name }}</h3>
                 <el-dropdown @command="handleKbAction">
-                  <el-button type="text" size="small">
+                  <el-button link size="small">
                     <el-icon><MoreFilled /></el-icon>
                   </el-button>
                   <template #dropdown>

@@ -19,7 +19,7 @@
           <span>复习历史记录</span>
           <div class="header-actions">
             <el-button type="primary" @click="goToReview">
-              <el-icon><Play /></el-icon>
+              <el-icon><VideoPlay /></el-icon>
               开始复习
             </el-button>
           </div>
@@ -171,7 +171,7 @@
                 </div>
                 <div class="session-actions">
                   <el-button
-                    type="text"
+                    link
                     size="small"
                     @click="viewSessionDetails(session)"
                   >
@@ -307,12 +307,12 @@
 </template>
 
 <script>
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useStore } from "vuex";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import {
-  Play,
+  VideoPlay,
   Document,
   TrophyBase,
   Medal,
@@ -327,7 +327,7 @@ import {
 export default {
   name: "HistoryView",
   components: {
-    Play,
+    VideoPlay,
     Document,
     TrophyBase,
     Medal,
@@ -357,20 +357,20 @@ export default {
     );
 
     const historyStats = computed(() => {
-      if (reviewHistory.value.length === 0) return null;
-
       const sessions = reviewHistory.value;
+      if (!Array.isArray(sessions) || sessions.length === 0) return null;
+
       const totalSessions = sessions.length;
       const totalScore = sessions.reduce(
-        (sum, session) => sum + session.average_score,
+        (sum, session) => sum + (session.average_score || 0),
         0
       );
       const totalDuration = sessions.reduce(
-        (sum, session) => sum + session.duration,
+        (sum, session) => sum + (session.duration || 0),
         0
       );
       const highestScore = Math.max(
-        ...sessions.map((session) => session.average_score)
+        ...sessions.map((session) => session.average_score || 0)
       );
 
       return {
@@ -382,7 +382,10 @@ export default {
     });
 
     const filteredHistory = computed(() => {
-      let filtered = [...reviewHistory.value];
+      const sessions = reviewHistory.value;
+      if (!Array.isArray(sessions)) return [];
+
+      let filtered = [...sessions];
 
       // Date range filter
       if (dateRange.value && dateRange.value.length === 2) {
@@ -511,6 +514,9 @@ export default {
 
         // Load review history for this knowledge base
         await store.dispatch("fetchReviewHistory", route.params.id);
+
+        // 等待 DOM 更新完成，减少 ResizeObserver 冲突
+        await nextTick();
       } catch (error) {
         console.error("Load data error:", error);
         ElMessage.error("加载历史记录失败");
